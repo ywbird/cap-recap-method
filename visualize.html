@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포획-재포획법 시각화</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        #container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .axis-label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .dot {
+            fill: steelblue;
+            opacity: 0.7;
+        }
+        
+        .dot:hover {
+            fill: orange;
+            opacity: 1;
+        }
+        
+        .tooltip {
+            position: absolute;
+            padding: 8px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 12px;
+            opacity: 0;
+        }
+        
+        .grid line {
+            stroke: #e0e0e0;
+            stroke-opacity: 0.7;
+            shape-rendering: crispEdges;
+        }
+        
+        .grid path {
+            stroke-width: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>포획-재포획법 시뮬레이션 시각화</h1>
+        <p>CSV 데이터를 아래에 붙여넣으세요 (컬럼: n, n1, n2, m, estimated_n)</p>
+        
+        <textarea id="csvInput" placeholder="n,n1,n2,m,estimated_n
+100,20,25,5,100
+150,30,35,10,105
+..."></textarea>
+        
+        <button onclick="updateVisualization()">시각화 생성</button>
+        
+        <div id="chart"></div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // 차트 설정
+        const margin = {top: 40, right: 40, bottom: 60, left: 70};
+        const width = 800 - margin.left - margin.right;
+        const height = 600 - margin.top - margin.bottom;
+        
+        function updateVisualization() {
+            // 기존 SVG 제거
+            d3.select("#chart").selectAll("*").remove();
+            
+            // CSV 데이터 파싱
+            const csvText = document.getElementById('csvInput').value.trim();
+            
+            if (!csvText) {
+                alert('CSV 데이터를 입력해주세요.');
+                return;
+            }
+            
+            // d3.csvParse로 데이터 파싱
+            const rawData = d3.csvParse(csvText);
+            
+            // 데이터 변환 (n1/n과 m/n2 계산)
+            const data = rawData.map(d => ({
+                n: +d.n,
+                n1: +d.n1,
+                n2: +d.n2,
+                m: +d.m,
+                estimated_n: +d.estimated_n,
+                x: +d.n1 / +d.n,  // n1/n
+                y: +d.m / +d.n2    // m/n2
+            })).filter(d => !isNaN(d.x) && !isNaN(d.y));
+            
+            if (data.length === 0) {
+                alert('유효한 데이터가 없습니다. CSV 형식을 확인해주세요.');
+                return;
+            }
+            
+            // SVG 생성
+            const svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+            
+            // 스케일 설정
+            const xScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.x) * 1.1])
+                .range([0, width]);
+            
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.y) * 1.1])
+                .range([height, 0]);
+            
+            // 그리드 추가
+            const xGrid = d3.axisBottom(xScale)
+                .tickSize(-height)
+                .tickFormat("");
+            
+            const yGrid = d3.axisLeft(yScale)
+                .tickSize(-width)
+                .tickFormat("");
+            
+            svg.append("g")
+                .attr("class", "grid")
+                .attr("transform", `translate(0,${height})`)
+                .call(xGrid);
+            
+            svg.append("g")
+                .attr("class", "grid")
+                .call(yGrid);
+            
+            // 축 생성
+            const xAxis = d3.axisBottom(xScale);
+            const yAxis = d3.axisLeft(yScale);
+            
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(xAxis);
+            
+            svg.append("g")
+                .call(yAxis);
+            
+            // 축 레이블
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("text-anchor", "middle")
+                .attr("x", width / 2)
+                .attr("y", height + 45)
+                .text("n₁/n (1차 포획 비율)");
+            
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("text-anchor", "middle")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -50)
+                .attr("x", -height / 2)
+                .text("m/n₂ (재포획 비율)");
+            
+            // 제목
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", -15)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("font-weight", "bold")
+                .text("포획-재포획법: 1차 포획 비율 vs 재포획 비율");
+            
+            // 툴팁
+            const tooltip = d3.select("#tooltip");
+            
+            // 데이터 포인트 추가
+            svg.selectAll(".dot")
+                .data(data)
+                .enter()
+                .append("circle")
+                .attr("class", "dot")
+                .attr("cx", d => xScale(d.x))
+                .attr("cy", d => yScale(d.y))
+                .attr("r", 5)
+                .on("mouseover", function(event, d) {
+                    tooltip
+                        .style("opacity", 1)
+                        .html(`
+                            <strong>원래 개체수 (n):</strong> ${d.n}<br>
+                            <strong>1차 포획 (n₁):</strong> ${d.n1}<br>
+                            <strong>2차 포획 (n₂):</strong> ${d.n2}<br>
+                            <strong>재포획 (m):</strong> ${d.m}<br>
+                            <strong>추정 개체수:</strong> ${d.estimated_n}<br>
+                            <strong>n₁/n:</strong> ${d.x.toFixed(3)}<br>
+                            <strong>m/n₂:</strong> ${d.y.toFixed(3)}
+                        `)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 10) + "px");
+                })
+                .on("mouseout", function() {
+                    tooltip.style("opacity", 0);
+                });
+            
+            // 선형 회귀선 추가 (이론적으로 n1/n = m/n2)
+            const maxVal = Math.max(d3.max(data, d => d.x), d3.max(data, d => d.y));
+            
+            svg.append("line")
+                .attr("x1", xScale(0))
+                .attr("y1", yScale(0))
+                .attr("x2", xScale(maxVal))
+                .attr("y2", yScale(maxVal))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "5,5")
+                .attr("opacity", 0.6);
+            
+            // 범례 추가
+            const legend = svg.append("g")
+                .attr("transform", `translate(${width - 150}, 20)`);
+            
+            legend.append("line")
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", 30)
+                .attr("y2", 0)
+                .attr("stroke", "red")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "5,5");
+            
+            legend.append("text")
+                .attr("x", 35)
+                .attr("y", 4)
+                .style("font-size", "12px")
+                .text("이론선 (y=x)");
+        }
+    </script>
+</body>
+</html>

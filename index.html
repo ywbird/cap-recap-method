@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capture Recapture</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="simulation">
+    <div id="container"></div>
+    <p id="state">
+      time: 0 ticks<br>
+      n<sub>1</sub>: 0<br>
+      n<sub>2</sub>: 0<br>
+      m: 0<br></p>
+  </div>
+  <div id="inputs">
+    <fieldset id="inputs-options">
+      <legend>Options</legend>
+
+      <label for="n">N</label>
+      <input type="number" name="n" id="n" value=200 step=10 min=10>
+
+      <label for="ai">AI</label>
+      <select name="ai" id="ai" disabled>
+        <option value="straight">Straight</option>
+        <option value="destination">Destination</option>
+      </select>
+
+      <hr><hr>
+
+      <label for="shape">Shape</label>
+      <select name="shape" id="shape">
+        <option value="circle">Circle</option>
+        <option value="square">Square</option>
+      </select>
+
+      <label for="location">Location</label>
+      <button name="location" id="location">Pick Location</button>
+
+      <label for="width">Width</label>
+      <input type="number" name="width" id="width" value=200 step=10 min=10>
+    </fieldset>
+
+    <fieldset id="inputs-main">
+      <legend>Main</legend>
+
+      <label for="t">Time(ticks)</label>
+      <input type="number" name="t" id="t" value=1000 step=10 min=100>
+
+      <label for="tps">TPS</label>
+      <input type="number" name="tps" id="tps" step=10 value=200 min=1>
+
+      <button id="pause">Pause</button>
+      <button id="start">Start</button>
+
+      <hr><hr>
+
+      <label for="iteration">Iteration</label>
+      <input type="number" name="iteration" id="iteration" step=10 value=50 min=10>
+
+      <button id="reset">Reset</button>
+      <button id="iterate">Iterate</button>
+    </fieldset>
+  </div>
+  <fieldset>
+  <legend>Output CSV</legend>
+  <button id="copy">Copy</button>
+  <pre id="output">n,n1,n2,m,estimated n
+</pre>
+  </fieldset>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

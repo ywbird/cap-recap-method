@@ -1,0 +1,39 @@
+#simulation {
+  display: flex;
+  gap: 1rem;
+}
+
+#container {
+  border: 1px solid black;
+  width: fit-content;
+  box-sizing: border-box;
+  display: grid;
+}
+
+#inputs {
+  display: flex;
+}
+
+#inputs-options,
+#inputs-main {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  grid-gap: 5px;
+  width: fit-content;
+
+  label {
+    text-align: right;
+  }
+
+  label:after {
+    content: ":";
+  }
+
+  hr {
+    width: 100%;
+  }
+}
+
+fieldset {
+  border: 1px solid black;
+}
