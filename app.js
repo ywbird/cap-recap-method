@@ -11,10 +11,9 @@ const ctx = canvas.getContext("2d")
 
 // Inputs
 const NInput = document.getElementById("n")
-const n1 = document.getElementById("n_1")
 const timeInput = document.getElementById("t")
 const locationBtn = document.getElementById("location")
-const shape = document.getElementById("shape")
+const shapeSel = document.getElementById("shape")
 const widthInput = document.getElementById("width")
 const startBtn = document.getElementById("start")
 const pauseBtn = document.getElementById("pause")
@@ -24,11 +23,13 @@ const iterationInput = document.getElementById("iteration")
 const resetBtn = document.getElementById("reset")
 const iterateBtn = document.getElementById("iterate")
 const output = document.getElementById("output")
-const copy = document.getElementById("copy")
+const copyBtn = document.getElementById("copy")
+const aiSel = document.getElementById("ai")
 
 /** @type {{
     * pos:    [number,number],
     * vel:    [number,number],
+    * target: [number,number],
     * marked: boolean
   * }[]} */
 let entities = []
@@ -70,8 +71,17 @@ function update() {
     entity.pos[0] += vel[0]
     entity.pos[1] += vel[1]
 
-    // entity.dir = PI - entity.dir
-    // entity.dir *= -1
+    // TODO: add target based entity movement
+    if (aiSel.value === "destination") {
+      const r = [...crypto.getRandomValues(new Uint16Array(2))].map(n => n / UINT16_MAX)
+      if (entity.target === undefined || dist2(...entity.pos, ...entity.target) <= 400) {
+        entity.target = [r[0] * (400 - 20) + 10, r[1] * (400 - 20) + 10]
+      }
+
+      const dy = entity.target[1] - entity.pos[1]
+      const dx = entity.target[0] - entity.pos[0]
+      entity.dir = Math.atan2(dy, dx)
+    }
 
     if (entity.pos[0] < 5
       || entity.pos[0] > 400 - 5
@@ -111,6 +121,7 @@ function draw() {
       ctx.fillStyle = "orangered"
       ctx.fillRect(entity.pos[0] - 5, entity.pos[1] - 5, 10, 10)
     }
+
     ctx.strokeRect(entity.pos[0] - 5, entity.pos[1] - 5, 10, 10)
     ctx.beginPath()
     ctx.moveTo(entity.pos[0], entity.pos[1])
@@ -121,7 +132,7 @@ function draw() {
 
   if (markLocation !== null) {
     const width = parseInt(widthInput.value)
-    if (shape.value === "circle") {
+    if (shapeSel.value === "circle") {
       ctx.beginPath()
       ctx.arc(markLocation[0], markLocation[1], width / 2, 0, 2 * PI)
       ctx.fillStyle = "rgb(100 250 100 / 0.4)"
@@ -130,7 +141,7 @@ function draw() {
       ctx.stroke()
       ctx.closePath()
     }
-    if (shape.value === "square") {
+    if (shapeSel.value === "square") {
       ctx.fillStyle = "rgb(100 250 100 / 0.4)"
       ctx.fillRect(markLocation[0] - width / 2, markLocation[1] - width / 2, width, width)
       ctx.strokeStyle = "black"
@@ -174,8 +185,6 @@ function iterate(num) {
     setTimeout(() => {
       init()
 
-      draw()
-
       for (let t = 0; t < parseInt(timeInput.value); t++) {
         update()
       }
@@ -205,7 +214,7 @@ resetBtn.addEventListener("click", () => {
 iterateBtn.addEventListener("click", () => {
   iterate(parseInt(iterationInput.value))
 })
-copy.addEventListener("click", async () => {
+copyBtn.addEventListener("click", async () => {
   await navigator.clipboard.writeText(output.innerText)
 })
 locationBtn.addEventListener("click", () => {
@@ -232,9 +241,9 @@ pauseBtn.addEventListener("click", () => running = !running)
   * */
 function isInRange(pos) {
   const width = parseInt(widthInput.value)
-  return (shape.value === "circle" &&
+  return (shapeSel.value === "circle" &&
     dist2(...markLocation, ...pos) <= width ** 2 / 4
-  ) || (shape.value === "square"
+  ) || (shapeSel.value === "square"
     && markLocation[0] - width / 2 <= pos[0]
     && pos[0] <= markLocation[0] + width / 2
     && markLocation[1] - width / 2 <= pos[1]
